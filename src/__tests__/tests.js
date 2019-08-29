@@ -30,6 +30,12 @@ function renderWithRouter(
         ...render(<Router history={localhistory}>{ui}</Router>), localhistory
     }
 }
+beforeEach(()=> {
+    cleanup();
+})
+afterEach(() => {
+    fetch.mockReset();
+})
 
 test('render query', async () => {
     const jsonstr = "[{\"id\":2,\"name\":\"Taco\",\"procedure\":\"put in shell\",\"ingredients\":[{\"id\":53,\"name\":\"tortilla\"},{\"id\":54,\"name\":\"meat\"},{\"id\":55,\"name\":\"beans\"}]},{\"id\":3,\"name\":\"Taco\",\"procedure\":\"Mix\",\"ingredients\":[{\"id\":81,\"name\":\"Tortilla\"},{\"id\":82,\"name\":\"meat\"},{\"id\":83,\"name\":\"cheese\"}]},{\"id\":4,\"name\":\"Taco\",\"procedure\":\"Mix\",\"ingredients\":[{\"id\":60,\"name\":\"Tortilla\"},{\"id\":61,\"name\":\"meat\"},{\"id\":62,\"name\":\"cheese\"}]}]"
@@ -48,7 +54,6 @@ test('render query', async () => {
 
     const errorlabel = await findByTestId('recipelisterror');
     await wait(() => expect(errorlabel).toHaveTextContent("OK"));
-    fetch.mockReset();
 });
 
 it('handle server error', async () => {
@@ -63,7 +68,6 @@ it('handle server error', async () => {
     const errorlabel = await findByTestId('recipelisterror');
     // debug();
     await wait(() => expect(errorlabel).toHaveTextContent("500 Error"));
-    fetch.mockReset();
 });
 
 it('render table from response', async () => {
@@ -79,7 +83,6 @@ it('render table from response', async () => {
     await wait(() => expect(table.children[0].children.length).not.toBe(1));
     expect(table.children[0].children.length).toBe(5);
     expect(getAllByTestId('editButton').length).toBe(4);
-    fetch.mockReset();
 });
 
 it('render empty table', async () => {
@@ -94,7 +97,6 @@ it('render empty table', async () => {
     const errorlabel = await findByTestId('recipelisterror');
     // debug();
     await wait(() => expect(errorlabel).toHaveTextContent("OK"));
-    fetch.mockReset();
 });
 
 it('create recipe', () => {
@@ -117,8 +119,6 @@ it('create recipe', () => {
     fireEvent.submit(form);
     expect(fetch).toHaveBeenCalled();
     expect(errorstring).toHaveTextContent("")
-    fetch.mockReset();
-
 });
 
 
@@ -144,9 +144,6 @@ it('handle error when creating recipe', async () => {
     expect(fetch).toHaveBeenCalled();
 
     await wait(() => expect(errorstring).toHaveTextContent("error"));
-    fetch.mockReset();
-
-    cleanup()
 });
 
 it('delete recipe', async () => {
@@ -175,7 +172,6 @@ it('delete recipe', async () => {
     await findByTestId("resultTable")
 
     await wait(expect(fetch).toHaveBeenLastCalledWith("http://localhost:8000/recipes/", {"headers": {"Content-Type": "application/json"}}));
-    fetch.mockReset();
 });
 
 it('handle error when deleting recipe', async () => {
@@ -199,9 +195,7 @@ it('handle error when deleting recipe', async () => {
 
     expect(fetch).toHaveBeenCalledWith("http://localhost:8000/recipes/1/", {"method": "DELETE"});
     await wait(() => expect(errorstring).toHaveTextContent("error"));
-    fetch.mockReset();
-
-    cleanup()
+    render(<App/>)
 });
 
 
@@ -210,7 +204,7 @@ it('edit recipe', async () => {
 
     fetch = jest.fn().mockImplementation(() => Promise.resolve(mockResponse(200, null, jsonstr)));
 
-    const {debug, getByTestId, getAllByTestId, findByTestId} = renderWithRouter(<App/>);
+    const {debug, getByTestId, getAllByTestId, findByTestId} = render(<App/>);
     const table = getByTestId('resultTable');
 
 
@@ -247,11 +241,8 @@ it('edit recipe', async () => {
     });
 
     //check redirect
-    await wait(expect(fetch).toHaveBeenLastCalledWith("http://localhost:8000/recipes/", {"headers": {"Content-Type": "application/json"}}));
     await findByTestId("resultTable")
-    fetch.mockReset();
-
-    cleanup()
+    await wait(expect(fetch).toHaveBeenCalledWith("http://localhost:8000/recipes/", {"headers": {"Content-Type": "application/json"}}));
 });
 
 
@@ -300,7 +291,4 @@ it('handle error when editing recipe', async () => {
     });
 
     await wait(() => expect(errorstring).toHaveTextContent("500 error"));
-    fetch.mockReset();
-
-    cleanup()
 });

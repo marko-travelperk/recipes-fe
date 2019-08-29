@@ -4,8 +4,13 @@ import {BrowserRouter as Router, Route, Link, Redirect} from 'react-router-dom'
 import {CenterDiv, Button, StyledRow, StyledTable, THeader} from './MyStyledComponents'
 
 class RecipeForm extends Component{
+    _isMounted = false;
+    componentWillUnmount() {
+        this._isMounted = false;
+    }
     constructor(props) {
         super(props);
+        this._isMounted = true;
         if(props.recipe != undefined ){
             this.state = {
                 recipeId: props.recipeId == undefined ? -1 : props.recipeId,
@@ -50,14 +55,16 @@ class RecipeForm extends Component{
                 responsejson  => {
                     if(responsejson != undefined) {
                         responsejson.ingredients = responsejson.ingredients.map(x => x.name);
-                        that.setState(
-                            {recipe: responsejson, errorString: ""})
+                        if(that._isMounted) {
+                            that.setState(
+                                {recipe: responsejson, errorString: ""})
+                        }
                     }
                     else{
-                        that.setState({redirect: true});
+                        if(that._isMounted) that.setState({redirect: true});
                     }
                 })
-            .catch(err => {that.setState({errorString: err.toString()}); alert(err)})
+            .catch(err => {if(that._isMounted) that.setState({errorString: err.toString()}); alert(err)})
     }
 
 
@@ -121,9 +128,9 @@ class RecipeForm extends Component{
                 method: 'DELETE'
             }).then(response => {if(!response.ok) throw (response.status +" " +response.statusText)}
             ).then( responsejson => {
-                that.setState({"redirect":true});
+                if(that._isMounted) that.setState({"redirect":true});
             }).catch(err => {
-                that.setState({redirect: false, errorString: err.toString()})
+            if(that._isMounted) that.setState({redirect: false, errorString: err.toString()})
         })
     }
 
@@ -156,9 +163,10 @@ class RecipeForm extends Component{
 }
 
 class App extends Component {
-
+    _isMounted = false;
     constructor(params){
         super(params);
+        this._isMounted = true;
         this.state = {
             "loaded" : false,
             "recipes" : []
@@ -186,10 +194,12 @@ class App extends Component {
                     if (responsejson !== undefined && responsejson.length != 0){
                         responsejson.map(recipe => {let ingredientlist = recipe.ingredients.map(x => x.name); recipe.ingredients = ingredientlist; recipes.push(recipe)});
                     }
-                    that.setState(
-                        {recipes: recipes, errorString:"OK"})
+                    if(that._isMounted) {
+                        that.setState(
+                            {recipes: recipes, errorString: "OK"})
+                    }
                 })
-        .catch(err => { alert(err); that.setState({errorString: err.toString()});})
+        .catch(err => { alert(err); if(that._isMounted) that.setState({errorString: err.toString()});})
     }
 
     showRecipeTable(allrecipes) {
@@ -230,6 +240,10 @@ class App extends Component {
                 {this.state.errorString !== undefined?<div style={{color:"red"}} data-testid={"recipelisterror"}>{this.state.errorString}</div>:null}
             </CenterDiv>
         )
+    }
+
+    componentWillUnmount() {
+        this._isMounted = false;
     }
 
     render() {
